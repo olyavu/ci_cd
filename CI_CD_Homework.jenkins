@@ -1,0 +1,36 @@
+pipeline {
+  agent any
+  stages {
+    stage('Checkout') {
+      steps {
+        git branch: 'main', url: 'https://github.com/olyavu/ci_cd.git'
+      }
+    }
+    stage('Install pip') {
+      steps {
+        sh 'apt-get update'
+        sh 'apt-get install -y python-pip'
+      }
+    }
+    stage('Install dependencies') {
+      steps {
+        sh 'pip install -r requirements.txt'
+      }
+    }
+    stage('Run pytest') {
+      steps {
+        sh 'python pytest_adventure.py'
+      }
+    }
+    stage('Merge changes to main branch') {
+      when {
+        changeset "origin/main"
+      }
+      steps {
+        sh 'git checkout main'
+        sh 'git merge --no-ff origin/feature1'
+        sh 'git push origin main'
+      }
+    }
+  }
+}
