@@ -19,7 +19,7 @@ pipeline {
     stage('Merge') {
       steps {
         sh 'git checkout main'
-        sh 'git merge --no-ff origin/develop'
+        sh 'git merge --no-ff origin/feature1'
         sh 'git push origin main'
       }
     }
