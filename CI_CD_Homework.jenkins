@@ -1,36 +1,47 @@
 pipeline {
-  agent any
-  stages {
-    stage('Checkout') {
-      steps {
-        git branch: 'main', url: 'https://github.com/olyavu/ci_cd.git'
-      }
+    agent any
+    stages {
+
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/olyavu/ci_cd'
+            }
+        }
+        stage('Install Dependencies') {
+            steps {
+                sh 'pip install --upgrade pip'
+                sh 'pip install pymssql'
+                sh 'pip install pandas'
+                sh 'pip install pytest'
+            }
+        }
+        stage('Testing') {
+            steps {
+                script {
+                    try {
+                        sh '''
+                        python3 pytest_adventure.py
+                        '''
+                    } catch (Exception err) {
+                        currentBuild.result = 'UNSTABLE'
+                        throw err
+                    }
+                }
+            }
+        }
+        stage('Merge if tests pass') {
+            when {
+                expression { currentBuild.result == null } // Only proceed if previous stage didn't fail
+            }
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'github-credentials', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
+                    sh '''
+                    git merge --no-ff feature1
+                    git remote set-url origin https://$USERNAME:$PASSWORD@github.com/olyavu/ci_cd
+                    git push origin main
+                    '''
+                }
+            }
+        }
     }
-    stage('Install pip') {
-      steps {
-        sh 'apt-get update'
-        sh 'apt-get install -y python-pip'
-      }
-    }
-    stage('Install dependencies') {
-      steps {
-        sh 'pip install -r requirements.txt'
-      }
-    }
-    stage('Run pytest') {
-      steps {
-        sh 'python pytest_adventure.py'
-      }
-    }
-    stage('Merge changes to main branch') {
-      when {
-        changeset "origin/main"
-      }
-      steps {
-        sh 'git checkout main'
-        sh 'git merge --no-ff origin/feature1'
-        sh 'git push origin main'
-      }
-    }
-  }
 }
