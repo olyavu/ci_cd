@@ -1,4 +1,4 @@
-import pyodbc
+import pymssql
 import pandas as pd
 import pytest
 
